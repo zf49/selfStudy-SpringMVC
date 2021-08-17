@@ -8,17 +8,26 @@ import javax.servlet.http.HttpServletResponse;
 
 public class HelloController implements Controller {
 
+    public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
+        ModelAndView modelAndView = new ModelAndView();
 
-    public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        //ModelAndView 模型和视图
-        ModelAndView mv = new ModelAndView();
+        // 业务代码和跳转全部在此完成
 
+        //业务代码
+        String result = "helloSoring MVC!!!!!!!!!";
 
-        //封装对象，放在ModelAndView中。Model
-        mv.addObject("msg","HelloSpringMVC!");
-        //封装要跳转的视图，放在ModelAndView中
-        mv.setViewName("hello"); //: /WEB-INF/jsp/hello.jsp
-        return mv;
+        modelAndView.addObject("msg",result);
+
+        //跳转
+        // 想跳转到哪个jsp就写哪个jsp页面的名字
+         modelAndView.setViewName("test");
+
+        
+        return modelAndView;
+
     }
+
+
+
 
 }
