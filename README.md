@@ -1,3 +1,5 @@
+
+
 # Spring MVC
 
 https://blog.csdn.net/qq_33369905/article/details/106647319?spm=1001.2014.3001.5502
@@ -127,7 +129,7 @@ https://blog.csdn.net/qq_33369905/article/details/106647319?spm=1001.2014.3001.5
    ```
 
    ## Step
-   
+
    ```xml
    <?xml version="1.0" encoding="UTF-8"?>
    <web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
@@ -157,16 +159,31 @@ https://blog.csdn.net/qq_33369905/article/details/106647319?spm=1001.2014.3001.5
            <servlet-name>SpringMVC</servlet-name>
            <url-pattern>/</url-pattern>
        </servlet-mapping>
+     
+     
+       <!--乱码 -->
    
    
+     <filter>
+           <filter-name>encoding</filter-name>
+           <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+           <init-param>
+               <param-name>encoding</param-name>
+               <param-value>utf-8</param-value>
+           </init-param>
+       </filter>
+       <filter-mapping>
+           <filter-name>encoding</filter-name>
+           <url-pattern>/*</url-pattern>
+       </filter-mapping>
    
    
    </web-app>
    ```
 
-1. Web.xml
+   1. Web.xml
 
-2. Springmvc-servlet.xml
+   2. Springmvc-servlet.xml
 
    ```xml
    <?xml version="1.0" encoding="UTF-8"?>
@@ -233,4 +250,136 @@ https://blog.csdn.net/qq_33369905/article/details/106647319?spm=1001.2014.3001.5
 
       
 
-   4. 
+
+
+
+在参数前加上
+
+```java
+@Controller
+@RequestMapping("/user")
+
+public class UserController {
+
+@GetMapping("/t1")
+public String test1(@RequestParam("name") String name, Model model){
+    System.out.println(name);
+
+    model.addAttribute("msg",name);
+
+
+        return "user";
+
+    }
+
+
+}
+```
+
+
+
+当前端接受的是一个对象？
+
+```java
+//     对象？
+@GetMapping("/t2")
+//http://localhost:8080/user/t1?id=1&name=chirs&age=25
+public String test2(User user, Model model) {
+    System.out.println(user);
+
+    return "user";
+}
+/*执行流程
+* 1。 接受前端用户传递的参数，判断参数名字，假设名字直接在方法上，可以直接使用
+* 2。 假设传递的是一个对象，匹配USer对象中的字段名，如果可以匹配，则成功，反之失败
+*
+*
+* */
+```
+
+----
+
+JSON
+
+```xml
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.13.0-rc1</version>
+</dependency>
+```
+
+```java
+@Controller
+//@RestController
+public class UserController {
+
+    @RequestMapping("/j1")
+    @ResponseBody//    它就不会走视图解析器，会直接返回字符串
+    public String test1() throws JsonProcessingException {
+
+       //jackson中又一个 ObjectMapper
+        ObjectMapper mapper = new ObjectMapper();
+        User user = new User("Chris",20,"nan");
+
+        String s = mapper.writeValueAsString(user);
+        
+        return s;
+    }
+    
+}
+```
+
+```xml
+    <!--解决json 乱码配置-->
+
+<mvc:annotation-driven>
+    <mvc:message-converters register-defaults="true">
+        <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+            <constructor-arg value="UTF-8"/>
+        </bean>
+        <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+            <property name="objectMapper">
+                <bean class="org.springframework.http.converter.json.Jackson2ObjectMapperFactoryBean">
+                    <property name="failOnEmptyBeans" value="false"/>
+                </bean>
+            </property>
+        </bean>
+    </mvc:message-converters>
+</mvc:annotation-driven>
+```
+
+fast json
+
+
+
+```java
+    @RequestMapping("/j4")
+//    @ResponseBody//    它就不会走视图解析器，会直接返回字符串
+    public String test4() throws JsonProcessingException {
+
+        List<User> list = new ArrayList();
+        User user1 = new User("Chris1",20,"nan");
+        User user2 = new User("Chris2",20,"nan");
+        User user3 = new User("Chris3",20,"nan");
+        User user4 = new User("Chris4",20,"nan");
+
+        list.add(user1);
+        list.add(user2);
+        list.add(user3);
+        list.add(user4);
+
+        String s = JSON.toJSONString(list);
+        return s;
+
+    }
+```
+
+```xml
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>fastjson</artifactId>
+    <version>1.2.78</version>
+</dependency>
+```
+

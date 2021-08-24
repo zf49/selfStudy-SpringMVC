@@ -12,5 +12,8 @@
   </head>
   <body>
   $END$
+
+
+  ${msg}
   </body>
 </html>
