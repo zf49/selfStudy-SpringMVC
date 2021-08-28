@@ -15,9 +15,18 @@
         <module>practiceMVC</module>
         <module>04-controller</module>
         <module>05-json</module>
+        <module>06-ajax</module>
     </modules>
 
     <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.20</version>
+            <scope>provided</scope>
+        </dependency>
+
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
