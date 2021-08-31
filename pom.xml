@@ -16,6 +16,9 @@
         <module>04-controller</module>
         <module>05-json</module>
         <module>06-ajax</module>
+        <module>07-interceptor</module>
+        <module>08-uploadAndDownload</module>
+        <module>08-upload</module>
     </modules>
 
     <dependencies>

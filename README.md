@@ -383,3 +383,291 @@ fast json
 </dependency>
 ```
 
+---
+
+拦截器
+
+实现HandleerInterceptpr接口
+
+拦截器就是AOP的一个具体实现
+
+```java
+package com.kuang.config;
+
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+public class LoginInterceptor implements HandlerInterceptor {
+
+    
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+         // 放行：判断什么情况下登陆
+        HttpSession session =request.getSession();
+         //登陆页面放行
+        if(request.getRequestURI().contains("gologin")){
+          return true;
+        }
+
+//        说明我在提交登陆
+        if(request.getRequestURI().contains("login")){
+            return true;
+        }
+
+               //session中有userInfo
+        //第一次登陆是没有session的
+          if(session.getAttribute("userInfo")!= null){
+             return true;
+
+          }
+          
+        //判断什么情况下没有登陆，判断Session
+        request.getRequestDispatcher("/WEB-INF/jsp/login.jsp").forward(request,response);
+        return false;
+
+
+
+
+    }
+}
+```
+
+--
+
+upload and download
+
+实现文件上传，表单的method必须为post，并将其enctype设置为multipart/form-data
+
+倒包：
+
+```xml
+<!-- https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload -->
+<dependency>
+    <groupId>commons-fileupload</groupId>
+    <artifactId>commons-fileupload</artifactId>
+    <version>1.4</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version>
+</dependency>
+```
+
+
+
+applicationContext
+
+```xml
+<bean id="multipartResolver"
+      class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+    <!--defaultEncoding：请求的编码格式必须和用户JSP的编码一致，以便正确读取表单中的内容。
+        uploadTempDir:文件上传过程中的临时目录，上传完成后，临时文件会自动删除
+        maxUploadSize:设置文件上传大小上限（单位为字节） -->
+    <property name="defaultEncoding" value="UTF-8" />
+    <property name="maxUploadSize" value="102400000" />
+    <!-- uploadTempDir可以不做设置，有默认的路径，上传完毕会临时文件会自动被清理掉 -->
+</bean>
+```
+
+2 different ways 
+
+```java
+package com.kuang.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.*;
+
+@Controller
+public class MyTest {
+
+
+   //@RequestParam("file") 将name=file控件得到的文件封装成CommonsMultipartFile 对象
+    //批量上传CommonsMultipartFile则为数组即可
+    @RequestMapping("/upload")
+    public String fileUpload(@RequestParam("file") CommonsMultipartFile file , HttpServletRequest request) throws IOException {
+
+        //获取文件名 : file.getOriginalFilename();
+        String uploadFileName = file.getOriginalFilename();
+
+        //如果文件名为空，直接回到首页！
+        if ("".equals(uploadFileName)){
+            return "redirect:/index.jsp";
+        }
+        System.out.println("上传文件名 : "+uploadFileName);
+
+        //上传路径保存设置
+        String path = request.getServletContext().getRealPath("/upload");
+        //如果路径不存在，创建一个
+        File realPath = new File(path);
+        if (!realPath.exists()){
+            realPath.mkdir();
+        }
+        System.out.println("上传文件保存地址："+realPath);
+
+        InputStream is = file.getInputStream(); //文件输入流
+        OutputStream os = new FileOutputStream(new File(realPath,uploadFileName)); //文件输出流
+
+        //读取写出
+        int len=0;
+        byte[] buffer = new byte[1024];
+        while ((len=is.read(buffer))!=-1){
+            os.write(buffer,0,len);
+            os.flush();
+        }
+        os.close();
+        is.close();
+        return "redirect:/index.jsp";
+    }
+
+
+
+
+    /*
+     * 采用file.Transto 来保存上传的文件
+     */
+    @RequestMapping("/upload2")
+    public String  fileUpload2(@RequestParam("file") CommonsMultipartFile file, HttpServletRequest request) throws IOException {
+
+        //上传路径保存设置
+        String path = request.getServletContext().getRealPath("/upload");
+        File realPath = new File(path);
+        if (!realPath.exists()){
+            realPath.mkdir();
+        }
+        //上传文件地址
+        System.out.println("上传文件保存地址："+realPath);
+
+        //通过CommonsMultipartFile的方法直接写文件（注意这个时候）
+        file.transferTo(new File(realPath +"/"+ file.getOriginalFilename()));
+
+        return "redirect:/index.jsp";
+    }
+
+
+
+
+    
+}
+```
+
+```html
+<%--
+  Created by IntelliJ IDEA.
+  User: chris
+  Date: 2021/9/1
+  Time: 上午12:05
+  To change this template use File | Settings | File Templates.
+--%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+  <head>
+    <title>$Title$</title>
+  </head>
+  <body>
+
+     <form action="${pageContext.request.contextPath}/upload" method="post" enctype="multipart/form-data">
+
+       <input type="file" name="file">
+       <input type="submit" value="upload">
+
+     </form>
+
+
+  
+  </body>
+</html>
+```
+
+----------
+
+downLoad
+
+```java
+  @RequestMapping("/download")
+    public String downloads(HttpServletResponse response , HttpServletRequest request) throws Exception{
+
+        //要下载的图片地址
+        String  path = request.getServletContext().getRealPath("/upload");
+        System.out.println(path);
+//        TODO：只改这一个位置
+        String  fileName = "A2-report-ZhifangWang.docx";
+
+        //1、设置response 响应头
+        response.reset(); //设置页面不缓存,清空buffer
+        response.setCharacterEncoding("UTF-8"); //字符编码
+        response.setContentType("multipart/form-data"); //二进制传输数据
+        //设置响应头
+        response.setHeader("Content-Disposition",
+                "attachment;fileName="+ URLEncoder.encode(fileName, "UTF-8"));
+
+        File file = new File(path,fileName);
+        //2、 读取文件--输入流
+        InputStream input=new FileInputStream(file);
+        //3、 写出文件--输出流
+        OutputStream out = response.getOutputStream();
+
+        byte[] buff =new byte[1024];
+        int index=0;
+        //4、执行 写出操作
+        while((index= input.read(buff))!= -1){
+            out.write(buff, 0, index);
+            out.flush();
+        }
+        out.close();
+        input.close();
+        return "ok";
+    }@RequestMapping(value="/download")
+public String downloads(HttpServletResponse response ,HttpServletRequest request) throws Exception{
+    //要下载的图片地址
+    String  path = request.getServletContext().getRealPath("/upload");
+    String  fileName = "基础语法.jpg";
+ 
+    //1、设置response 响应头
+    response.reset(); //设置页面不缓存,清空buffer
+    response.setCharacterEncoding("UTF-8"); //字符编码
+    response.setContentType("multipart/form-data"); //二进制传输数据
+    //设置响应头
+    response.setHeader("Content-Disposition",
+            "attachment;fileName="+URLEncoder.encode(fileName, "UTF-8"));
+ 
+    File file = new File(path,fileName);
+    //2、 读取文件--输入流
+    InputStream input=new FileInputStream(file);
+    //3、 写出文件--输出流
+    OutputStream out = response.getOutputStream();
+ 
+    byte[] buff =new byte[1024];
+    int index=0;
+    //4、执行 写出操作
+    while((index= input.read(buff))!= -1){
+        out.write(buff, 0, index);
+        out.flush();
+    }
+    out.close();
+    input.close();
+    return null;
+}
+```
+
+
+
+最暴力：
+
+前端加连接
+
+```html
+<a href="${pageContext.request.contextPath}/statics/A2-report-ZhifangWang.docx">下载文件</a>
+```
+
+
+
